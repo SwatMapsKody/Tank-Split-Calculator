@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SWAT Tank Split Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --black: #121212;
+      --white: #FFFFFF;
+      --off-white: #FAFAFA;
+      --dark-orange: #EA5725;
+      --orange: #F68D23;
+      --yellow: #FBBE1F;
+      --light-green: #9EBA3E;
+      --dark-green: #5AA946;
+      --grey: #B6B8BA;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--off-white);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--black);
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .card {
+      background: var(--white);
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      width: 380px;
+      max-width: 100%;
+      text-align: center;
+      border-top: 6px solid var(--dark-orange);
+    }
+
+    .logo {
+      width: 160px;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      margin: 6px 0 12px;
+      color: var(--black);
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      font-size: 16px;
+      border-radius: 10px;
+      border: 1px solid var(--grey);
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      font-size: 16px;
+      background: var(--dark-orange);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: var(--orange);
+    }
+
+    .secondary-button {
+      background: var(--black);
+      margin-top: 4px;
+    }
+
+    .secondary-button:hover {
+      background: #333333;
+    }
+
+    .tank-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .tank-row input {
+      flex: 1;
+    }
+
+    .remove-button {
+      width: 44px;
+      padding: 12px 0;
+      background: var(--grey);
+      color: var(--black);
+      margin-top: 0;
+    }
+
+    .remove-button:hover {
+      background: #999999;
+    }
+
+    .result {
+      margin-top: 18px;
+      font-size: 16px;
+      font-weight: bold;
+      white-space: pre-line;
+      background: var(--off-white);
+      padding: 12px;
+      border-radius: 10px;
+      text-align: left;
+    }
+
+    .section-label {
+      font-size: 14px;
+      color: #666666;
+      margin-top: 10px;
+      text-align: left;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+        <h2>Tank Split Calculator</h2>
+
+    <div class="section-label">Tank Sizes (bu)</div>
+    <div id="tankContainer"></div>
+    <button class="secondary-button" onclick="addTank()">+ Add Tank</button>
+
+    <div class="section-label">Default Rate (lbs/ac)</div>
+    <input id="rate" type="number" placeholder="e.g. 150">
+
+    <button onclick="calculate()">Calculate</button>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    let tankCount = 0;
+
+    function addTank(value = '') {
+      tankCount++;
+
+      const container = document.getElementById('tankContainer');
+      const row = document.createElement('div');
+      row.className = 'tank-row';
+
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.placeholder = `Tank ${tankCount}`;
+      input.className = 'tank-input';
+      input.value = value;
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'remove-button';
+      removeButton.innerText = '×';
+      removeButton.onclick = function () {
+        row.remove();
+        renumberTanks();
+        calculate();
+      };
+
+      row.appendChild(input);
+      row.appendChild(removeButton);
+      container.appendChild(row);
+
+      renumberTanks();
+    }
+
+    function renumberTanks() {
+      const inputs = document.querySelectorAll('.tank-input');
+      inputs.forEach((input, index) => {
+        input.placeholder = `Tank ${index + 1}`;
+      });
+      tankCount = inputs.length;
+    }
+
+    function calculate() {
+      const inputs = Array.from(document.querySelectorAll('.tank-input'));
+      const tanks = inputs.map(input => parseFloat(input.value)).filter(value => !isNaN(value) && value > 0);
+      const rate = parseFloat(document.getElementById('rate').value);
+      const result = document.getElementById('result');
+
+      if (tanks.length < 2) {
+        result.innerText = 'Enter at least 2 tank sizes';
+        return;
+      }
+
+      const total = tanks.reduce((sum, value) => sum + value, 0);
+
+      if (total <= 0) {
+        result.innerText = 'Enter valid tank sizes';
+        return;
+      }
+
+      let output = 'Split:\n';
+
+      tanks.forEach((tank, index) => {
+        const ratio = tank / total;
+        const percent = (ratio * 100).toFixed(1);
+        output += `Tank ${index + 1}: ${percent}%\n`;
+      });
+
+      if (!isNaN(rate)) {
+        output += '\nSet Your Rates:\n';
+
+        tanks.forEach((tank, index) => {
+          const ratio = tank / total;
+          const tankRate = (rate * ratio).toFixed(1);
+          output += `Tank ${index + 1}: ${tankRate} lbs/ac\n`;
+        });
+      }
+
+      result.innerText = output.trim();
+    }
+
+    addTank();
+    addTank();
+  </script>
+</body>
+</html>
