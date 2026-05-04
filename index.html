@@ -41,11 +41,6 @@
       border-top: 6px solid var(--dark-orange);
     }
 
-    .logo {
-      width: 160px;
-      margin-bottom: 10px;
-    }
-
     h2 {
       margin: 6px 0 12px;
       color: var(--black);
@@ -127,11 +122,19 @@
       text-align: left;
       font-weight: bold;
     }
+
+    .help-text {
+      font-size: 12px;
+      color: #666666;
+      text-align: left;
+      margin-top: -4px;
+      margin-bottom: 4px;
+    }
   </style>
 </head>
 <body>
   <div class="card">
-        <h2>Tank Split Calculator</h2>
+    <h2>Tank Split Calculator</h2>
 
     <div class="section-label">Tank Sizes (bu)</div>
     <div id="tankContainer"></div>
@@ -140,92 +143,91 @@
     <div class="section-label">Default Rate (lbs/ac)</div>
     <input id="rate" type="number" placeholder="e.g. 150">
 
+    <div class="section-label">Product Weight (lbs/bu)</div>
+    <input id="productWeight" type="number" placeholder="e.g. 60">
+    <div class="help-text">Used to calculate acres covered by each tank.</div>
+
     <button onclick="calculate()">Calculate</button>
     <div class="result" id="result"></div>
   </div>
 
   <script>
-    let tankCount = 0;
+let tankCount = 0;
 
-    function addTank(value = '') {
-      tankCount++;
+function addTank() {
+  const container = document.getElementById('tankContainer');
 
-      const container = document.getElementById('tankContainer');
-      const row = document.createElement('div');
-      row.className = 'tank-row';
+  const row = document.createElement('div');
+  row.className = 'tank-row';
 
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.placeholder = `Tank ${tankCount}`;
-      input.className = 'tank-input';
-      input.value = value;
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'tank-input';
+  input.placeholder = `Tank ${container.children.length + 1}`;
 
-      const removeButton = document.createElement('button');
-      removeButton.type = 'button';
-      removeButton.className = 'remove-button';
-      removeButton.innerText = '×';
-      removeButton.onclick = function () {
-        row.remove();
-        renumberTanks();
-        calculate();
-      };
+  const removeButton = document.createElement('button');
+  removeButton.type = 'button';
+  removeButton.className = 'remove-button';
+  removeButton.innerText = '×';
+  removeButton.onclick = () => {
+    row.remove();
+    renumber();
+  };
 
-      row.appendChild(input);
-      row.appendChild(removeButton);
-      container.appendChild(row);
+  row.appendChild(input);
+  row.appendChild(removeButton);
+  container.appendChild(row);
+}
 
-      renumberTanks();
-    }
+function renumber() {
+  const inputs = document.querySelectorAll('.tank-input');
+  inputs.forEach((input, i) => {
+    input.placeholder = `Tank ${i + 1}`;
+  });
+}
 
-    function renumberTanks() {
-      const inputs = document.querySelectorAll('.tank-input');
-      inputs.forEach((input, index) => {
-        input.placeholder = `Tank ${index + 1}`;
-      });
-      tankCount = inputs.length;
-    }
+function calculate() {
+  const inputs = Array.from(document.querySelectorAll('.tank-input'));
+  const tanks = inputs.map(i => parseFloat(i.value)).filter(v => !isNaN(v) && v > 0);
 
-    function calculate() {
-      const inputs = Array.from(document.querySelectorAll('.tank-input'));
-      const tanks = inputs.map(input => parseFloat(input.value)).filter(value => !isNaN(value) && value > 0);
-      const rate = parseFloat(document.getElementById('rate').value);
-      const result = document.getElementById('result');
+  const rate = parseFloat(document.getElementById('rate').value);
+  const productWeight = parseFloat(document.getElementById('productWeight').value);
+  const result = document.getElementById('result');
 
-      if (tanks.length < 2) {
-        result.innerText = 'Enter at least 2 tank sizes';
-        return;
-      }
+  if (tanks.length < 2) {
+    result.innerText = 'Enter at least 2 tank sizes';
+    return;
+  }
 
-      const total = tanks.reduce((sum, value) => sum + value, 0);
+  const total = tanks.reduce((a,b) => a + b, 0);
 
-      if (total <= 0) {
-        result.innerText = 'Enter valid tank sizes';
-        return;
-      }
+  let output = 'Split:\n';
 
-      let output = 'Split:\n';
+  tanks.forEach((t, i) => {
+    const pct = (t / total * 100).toFixed(1);
+    output += `Tank ${i+1}: ${pct}%\n`;
+  });
 
-      tanks.forEach((tank, index) => {
-        const ratio = tank / total;
-        const percent = (ratio * 100).toFixed(1);
-        output += `Tank ${index + 1}: ${percent}%\n`;
-      });
+  if (!isNaN(rate)) {
+    output += '\nSet Default Rates to:\n';
+    tanks.forEach((t,i) => {
+      const r = (t / total) * rate;
+      output += `Tank ${i+1}: ${r.toFixed(1)} lbs/ac\n`;
+    });
+  }
 
-      if (!isNaN(rate)) {
-        output += '\nSet Your Rates:\n';
+  if (!isNaN(rate) && !isNaN(productWeight)) {
+    const totalBu = total;
+    const acres = (totalBu * productWeight) / rate;
+    output += `\nAcres covered at: ${rate} lbs/ac\n${acres.toFixed(1)} ac`;
+  }
 
-        tanks.forEach((tank, index) => {
-          const ratio = tank / total;
-          const tankRate = (rate * ratio).toFixed(1);
-          output += `Tank ${index + 1}: ${tankRate} lbs/ac\n`;
-        });
-      }
+  result.innerText = output;
+}
 
-      result.innerText = output.trim();
-    }
-
-    addTank();
-    addTank();
-  </script>
+// default 2 tanks
+addTank();
+addTank();
+</script>
 </body>
 </html>
